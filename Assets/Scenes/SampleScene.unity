@@ -959,7 +959,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1de8ddd9c075ec743bd0ba6bf6cb78db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  punteroScript: {fileID: 1337412752}
+  GameManager: {fileID: 1337412751}
 --- !u!195 &868145931
 NavMeshAgent:
   m_ObjectHideFlags: 0
