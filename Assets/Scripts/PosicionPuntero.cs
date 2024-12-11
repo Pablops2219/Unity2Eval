@@ -1,67 +1,83 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class PosicionPuntero : MonoBehaviour
 {
     public Vector3 destino { get; set; }
-    public Vector3 hitPoint { get; set; }
     public Camera cam;
     public GameObject sphere;
 
-    // Start is called before the first frame update
-    void Start()
+    private Transform highlight;
+    private Transform selection;
+    private RaycastHit raycastHit;
+
+    private bool PerformRaycast(out RaycastHit hit)
     {
+        hit = default;
+
+        // Generar un rayo desde la posición del mouse
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+
+        // Comprobar si el puntero está sobre la UI o si el raycast golpea algo
+        if (!EventSystem.current.IsPointerOverGameObject() &&
+            Physics.Raycast(ray, out hit))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     // Update is called once per frame
     void Update()
     {
+        // Lógica de highlight
+        HandleHighlight();
+
+        // Detectar clic izquierdo para movimiento
         if (Input.GetMouseButtonDown(0))
         {
-            ProcessCursorInputs();
-            destino = hitPoint;
+            HandleMovement();
+        }
+    }
+
+    private void HandleHighlight()
+    {
+        // Resetear el highlight previo
+        if (highlight != null)
+        {
+            highlight.gameObject.GetComponent<Outline>().enabled = false;
+            highlight = null;
+        }
+
+        // Usar el raycast modularizado para detectar objetos interactuables
+        if (PerformRaycast(out raycastHit))
+        {
+            highlight = raycastHit.transform;
+            if (highlight.CompareTag("Interactuable"))
+            {
+                Outline outline = highlight.gameObject.GetComponent<Outline>() ??
+                                  highlight.gameObject.AddComponent<Outline>();
+                outline.enabled = true;
+                highlight.gameObject.GetComponent<Outline>().OutlineColor = Color.magenta;
+                highlight.gameObject.GetComponent<Outline>().OutlineWidth = 7.0f;
+            }
+            else
+            {
+                highlight = null;
+            }
+        }
+    }
+
+    private void HandleMovement()
+    {
+        // Usar el raycast modularizado para obtener la posición de impacto
+        if (PerformRaycast(out raycastHit))
+        {
+            destino = raycastHit.point;
             sphere.transform.position = destino;
         }
-
-        if (Input.GetMouseButtonDown(1))
-        {
-            ProcessCursorInputs();
-            //SpawnTerrainScanner(hitPoint);
-        }
-    }
-
-    private void ProcessCursorInputs()
-    {
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
-        
-        if (Physics.Raycast(ray, out hit))
-        {
-            hitPoint = hit.point;
-        }
-    }
-
-    public GameObject terrainScannerPrefab;
-    public float terrainScannerDuration;
-    public float terrainScannerSize;
-
-    public void SpawnTerrainScanner(Vector3 spawnPosTerrainCollider)
-    {
-        GameObject terrainScanner =
-            Instantiate(this.terrainScannerPrefab, spawnPosTerrainCollider, Quaternion.identity) as GameObject;
-        ParticleSystem terrainScannerPS = terrainScanner.transform.GetChild(0).GetComponent<ParticleSystem>();
-        if (!terrainScannerPS.IsUnityNull())
-        {
-            var main = terrainScannerPS.main;
-            main.startLifetime = terrainScannerDuration;
-            main.startSize = terrainScannerSize;
-        }
-        else
-        {
-            Debug.Log("error");
-        }
-        Destroy(terrainScanner, terrainScannerDuration+1);
     }
 }

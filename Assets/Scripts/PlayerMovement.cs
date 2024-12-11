@@ -14,6 +14,7 @@ public class PlayerMovement : MonoBehaviour
     void Start()
     {
         punteroScript = GameManager.GetComponent<PosicionPuntero>();
+        punteroScript.destino = this.transform.position;
         _animator = this.GetComponent<Animator>();
         agent = GetComponent<NavMeshAgent>();
         //StartCoroutine(NoisySteps());
@@ -34,15 +35,5 @@ public class PlayerMovement : MonoBehaviour
         agent.SetDestination(punteroScript.destino);
     }
 
-    IEnumerator NoisySteps()
-    {
-        while (true)
-        {
-            yield return new WaitForSeconds(2f);
-            if(punteroScript != null)
-            {
-                punteroScript.SpawnTerrainScanner(this.transform.position);
-            }
-        }
-    }
+    
 }
