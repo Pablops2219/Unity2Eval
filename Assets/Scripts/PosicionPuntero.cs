@@ -6,8 +6,11 @@ using UnityEngine.EventSystems;
 public class PosicionPuntero : MonoBehaviour
 {
     public Vector3 destino { get; set; }
-    public Camera cam;
-    public GameObject sphere;
+    [SerializeField] private Camera cam;
+    [SerializeField] private GameObject sphere;
+    [SerializeField] private Transform foregroundPosition;
+    [SerializeField] private GameObject currentInteractable; // Objeto interactuable actual
+
 
     private Transform highlight;
     private Transform selection;
@@ -33,17 +36,31 @@ public class PosicionPuntero : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        // Lógica de highlight
-        HandleHighlight();
+
+        PerformRaycast(out raycastHit);
+        // Lógica de los interactuables
+        HandleInteractables(raycastHit);
 
         // Detectar clic izquierdo para movimiento
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(1))
         {
             HandleMovement();
         }
+
+        if (Input.GetMouseButtonDown(0))
+        {
+            Debug.Log("?");
+            GameObject foregorundObject = raycastHit.collider.gameObject;
+
+            // Comprobar si es interactuable
+            if (foregorundObject.CompareTag("Interactuable"))
+            {
+                ShowInForeground(foregorundObject);
+            }
+        }
     }
 
-    private void HandleHighlight()
+    private void HandleInteractables(RaycastHit raycastHit)
     {
         // Resetear el highlight previo
         if (highlight != null)
@@ -63,6 +80,9 @@ public class PosicionPuntero : MonoBehaviour
                 outline.enabled = true;
                 highlight.gameObject.GetComponent<Outline>().OutlineColor = Color.magenta;
                 highlight.gameObject.GetComponent<Outline>().OutlineWidth = 7.0f;
+                
+                //Script interaction = highlight.gameObject.GetComponent<Script>() ??
+                                  //highlight.gameObject.AddComponent<Script>();
             }
             else
             {
@@ -73,11 +93,27 @@ public class PosicionPuntero : MonoBehaviour
 
     private void HandleMovement()
     {
-        // Usar el raycast modularizado para obtener la posición de impacto
         if (PerformRaycast(out raycastHit))
         {
             destino = raycastHit.point;
             sphere.transform.position = destino;
         }
+    }
+    
+    private void ShowInForeground(GameObject interactable)
+    {
+        // Si ya hay un objeto en primer plano, devolverlo a su posición original
+        if (currentInteractable != null)
+        {
+            currentInteractable.transform.parent = null;
+        }
+
+        // Guardar el nuevo objeto interactuable actual
+        currentInteractable = interactable;
+
+        // Mover el objeto a la posición en primer plano
+        interactable.transform.parent = foregroundPosition; // Vincular al espacio en primer plano
+        interactable.transform.localPosition = Vector3.zero; // Centrar en la posición
+        interactable.transform.localRotation = Quaternion.identity; // Reiniciar la rotación
     }
 }
