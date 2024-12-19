@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using Cinemachine;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -12,9 +14,42 @@ public class PosicionPuntero : MonoBehaviour
     [SerializeField] private GameObject currentInteractable; // Objeto interactuable actual
 
 
+    private CinemachineBrain cinemachineBrain;
     private Transform highlight;
     private Transform selection;
     private RaycastHit raycastHit;
+    private GameObject player;
+
+    private void Start()
+    {
+        player = GameObject.FindGameObjectWithTag("Player");
+        // Obtener el CinemachineBrain desde la cámara principal
+        cinemachineBrain = cam.GetComponent<CinemachineBrain>();
+
+        if (cinemachineBrain == null)
+        {
+            Debug.LogError("No se encontró CinemachineBrain en la cámara principal.");
+        }
+    }
+
+    public CinemachineVirtualCameraBase GetActiveVirtualCamera()
+    {
+        if (cinemachineBrain != null)
+        {
+            // Obtener la cámara virtual activa
+            CinemachineVirtualCameraBase activeVirtualCamera =
+                cinemachineBrain.ActiveVirtualCamera as CinemachineVirtualCameraBase;
+
+            if (activeVirtualCamera != null)
+            {
+                //Debug.Log($"Cámara virtual activa: {activeVirtualCamera.Name}");
+                return activeVirtualCamera;
+            }
+        }
+
+        Debug.LogWarning("No hay ninguna cámara virtual activa.");
+        return null;
+    }
 
     private bool PerformRaycast(out RaycastHit hit)
     {
@@ -36,7 +71,6 @@ public class PosicionPuntero : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
         PerformRaycast(out raycastHit);
         // Lógica de los interactuables
         HandleInteractables(raycastHit);
@@ -44,18 +78,32 @@ public class PosicionPuntero : MonoBehaviour
         // Detectar clic izquierdo para movimiento
         if (Input.GetMouseButtonDown(1))
         {
-            HandleMovement();
+            MoveToClick();
         }
 
         if (Input.GetMouseButtonDown(0))
         {
-            Debug.Log("?");
-            GameObject foregorundObject = raycastHit.collider.gameObject;
+            GameObject foregroundObject = raycastHit.collider.gameObject;
 
             // Comprobar si es interactuable
-            if (foregorundObject.CompareTag("Interactuable"))
+            if (foregroundObject.CompareTag("Interactuable"))
             {
-                ShowInForeground(foregorundObject);
+                float distance = Vector3.Distance(player.transform.position, foregroundObject.transform.position);
+
+                if (distance <= 5f)
+                {
+                    ShowInForeground(foregroundObject);
+                }
+                else
+                {
+                    MoveToClick();
+                    
+                }
+            }
+
+            if (foregroundObject.CompareTag("Clon Interactuable"))
+            {
+                ShowInForeground(foregroundObject);
             }
         }
     }
@@ -80,9 +128,6 @@ public class PosicionPuntero : MonoBehaviour
                 outline.enabled = true;
                 highlight.gameObject.GetComponent<Outline>().OutlineColor = Color.magenta;
                 highlight.gameObject.GetComponent<Outline>().OutlineWidth = 7.0f;
-                
-                //Script interaction = highlight.gameObject.GetComponent<Script>() ??
-                                  //highlight.gameObject.AddComponent<Script>();
             }
             else
             {
@@ -91,7 +136,7 @@ public class PosicionPuntero : MonoBehaviour
         }
     }
 
-    private void HandleMovement()
+    private void MoveToClick()
     {
         if (PerformRaycast(out raycastHit))
         {
@@ -99,21 +144,45 @@ public class PosicionPuntero : MonoBehaviour
             sphere.transform.position = destino;
         }
     }
-    
+
+    bool showingInteractable = false;
+
+    public bool isShowingInteractable()
+    {
+        return showingInteractable;
+    }
+
     private void ShowInForeground(GameObject interactable)
     {
-        // Si ya hay un objeto en primer plano, devolverlo a su posición original
-        if (currentInteractable != null)
+        if (showingInteractable)
         {
-            currentInteractable.transform.parent = null;
+            Destroy(currentInteractable);
+            showingInteractable = false;
+            return;
         }
+        
+        CinemachineVirtualCameraBase activeCamera = GetActiveVirtualCamera();
+        if (activeCamera == null)
+        {
+            Debug.LogError("No se encontró una cámara activa.");
+            return;
+        }
+        
+        interactable.GetComponent<Outline>().enabled = false;
+        GameObject clone = Instantiate(interactable);
+        clone.tag = "Clon Interactuable";
 
-        // Guardar el nuevo objeto interactuable actual
-        currentInteractable = interactable;
+        // Ajustar la posición del clon frente a la cámara activa
+        Vector3 cameraForward = activeCamera.transform.forward;
+        Vector3 cameraPosition = activeCamera.transform.position;
+        Vector3 offset = cameraForward * 2.0f;
+        clone.transform.position = cameraPosition + offset;
 
-        // Mover el objeto a la posición en primer plano
-        interactable.transform.parent = foregroundPosition; // Vincular al espacio en primer plano
-        interactable.transform.localPosition = Vector3.zero; // Centrar en la posición
-        interactable.transform.localRotation = Quaternion.identity; // Reiniciar la rotación
+        //clone.transform.LookAt(activeCamera.transform);
+        //clone.transform.Rotate(0, 180, 0); 
+
+        clone.transform.localScale = interactable.transform.localScale;
+        currentInteractable = clone;
+        showingInteractable = true;
     }
 }

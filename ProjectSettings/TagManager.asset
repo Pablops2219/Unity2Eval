@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Floor
   - Interactuable
+  - Clon Interactuable
   layers:
   - Default
   - TransparentFX
