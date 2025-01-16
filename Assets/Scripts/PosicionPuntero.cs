@@ -68,23 +68,34 @@ public class PosicionPuntero : MonoBehaviour
         return false;
     }
 
-    // Update is called once per frame
+    private Transform selectedObject;
+    private Vector3 previousMousePos;
     void Update()
     {
         PerformRaycast(out raycastHit);
         // Lógica de los interactuables
         HandleInteractables(raycastHit);
-
+        
+        
+        GameObject foregroundObject = raycastHit.collider != null ? raycastHit.collider.gameObject : null;
+        
+        
         // Detectar clic izquierdo para movimiento
         if (Input.GetMouseButtonDown(1))
         {
-            MoveToClick();
+            if (foregroundObject.CompareTag("Clon Interactuable"))
+            {
+                selectedObject = foregroundObject.transform;
+                previousMousePos = Input.mousePosition;
+            }
+            else
+            {
+                MoveToClick();
+            }
         }
 
         if (Input.GetMouseButtonDown(0))
         {
-            GameObject foregroundObject = raycastHit.collider.gameObject;
-
             // Comprobar si es interactuable
             if (foregroundObject.CompareTag("Interactuable"))
             {
@@ -105,6 +116,25 @@ public class PosicionPuntero : MonoBehaviour
             {
                 ShowInForeground(foregroundObject);
             }
+        }
+        
+
+        if (Input.GetMouseButton(1) && selectedObject != null) // While dragging
+        {
+            Vector3 mouseDelta = Input.mousePosition - previousMousePos; // Calculate mouse movement
+
+            // Apply rotation based on mouse movement
+            float rotationSpeed = 0.2f; // Adjust rotation speed
+            selectedObject.Rotate(Vector3.up, -mouseDelta.x * rotationSpeed, Space.World); // Horizontal drag
+            selectedObject.Rotate(Vector3.right, mouseDelta.y * rotationSpeed, Space.World); // Vertical drag
+
+            previousMousePos = Input.mousePosition; // Update previous mouse position
+        }
+
+        if (Input.GetMouseButtonUp(1)) // On mouse button release
+        {
+            
+            ; // Deselect the object
         }
     }
 
@@ -144,6 +174,8 @@ public class PosicionPuntero : MonoBehaviour
             sphere.transform.position = destino;
         }
     }
+    
+    
 
     bool showingInteractable = false;
 
