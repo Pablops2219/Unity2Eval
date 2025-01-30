@@ -70,6 +70,7 @@ public class PosicionPuntero : MonoBehaviour
 
     private Transform selectedObject;
     private Vector3 previousMousePos;
+    private float distance;
     void Update()
     {
         PerformRaycast(out raycastHit);
@@ -78,8 +79,14 @@ public class PosicionPuntero : MonoBehaviour
         
         
         GameObject foregroundObject = raycastHit.collider != null ? raycastHit.collider.gameObject : null;
+        distance = Vector3.Distance(player.transform.position, foregroundObject.transform.position);
         
-        
+        if(isShowingInteractable() && distance >= 5f && foregroundObject.CompareTag("Clon Interactuable"))
+        {
+            Destroy(currentInteractable);
+            showingInteractable = false;
+        }
+
         // Detectar clic izquierdo para movimiento
         if (Input.GetMouseButtonDown(1))
         {
@@ -99,7 +106,7 @@ public class PosicionPuntero : MonoBehaviour
             // Comprobar si es interactuable
             if (foregroundObject.CompareTag("Interactuable"))
             {
-                float distance = Vector3.Distance(player.transform.position, foregroundObject.transform.position);
+                
 
                 if (distance <= 5f)
                 {
