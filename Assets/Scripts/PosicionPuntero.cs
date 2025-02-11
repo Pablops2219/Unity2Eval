@@ -74,56 +74,59 @@ public class PosicionPuntero : MonoBehaviour
     void Update()
     {
         PerformRaycast(out raycastHit);
+
         // Lógica de los interactuables
         HandleInteractables(raycastHit);
-        
-        
+
+        // Verificar si el raycast golpeó un objeto antes de acceder a él
         GameObject foregroundObject = raycastHit.collider != null ? raycastHit.collider.gameObject : null;
-        distance = Vector3.Distance(player.transform.position, foregroundObject.transform.position);
-        
-        if(isShowingInteractable() && distance >= 5f && foregroundObject.CompareTag("Clon Interactuable"))
-        {
-            Destroy(currentInteractable);
-            showingInteractable = false;
-        }
 
-        // Detectar clic izquierdo para movimiento
-        if (Input.GetMouseButtonDown(1))
+        if (foregroundObject != null) // Solo continuar si foregroundObject no es null
         {
-            if (foregroundObject.CompareTag("Clon Interactuable"))
+            distance = Vector3.Distance(player.transform.position, foregroundObject.transform.position);
+
+            if (isShowingInteractable() && distance >= 5f && foregroundObject.CompareTag("Clon Interactuable"))
             {
-                selectedObject = foregroundObject.transform;
-                previousMousePos = Input.mousePosition;
+                Destroy(currentInteractable);
+                showingInteractable = false;
             }
-            else
-            {
-                MoveToClick();
-            }
-        }
 
-        if (Input.GetMouseButtonDown(0))
-        {
-            // Comprobar si es interactuable
-            if (foregroundObject.CompareTag("Interactuable"))
+            // Detectar clic derecho para movimiento
+            if (Input.GetMouseButtonDown(1))
             {
-                
-
-                if (distance <= 5f)
+                if (foregroundObject.CompareTag("Clon Interactuable"))
                 {
-                    ShowInForeground(foregroundObject);
+                    selectedObject = foregroundObject.transform;
+                    previousMousePos = Input.mousePosition;
                 }
                 else
                 {
                     MoveToClick();
-                    
                 }
             }
 
-            if (foregroundObject.CompareTag("Clon Interactuable"))
+            if (Input.GetMouseButtonDown(0))
             {
-                ShowInForeground(foregroundObject);
+                // Comprobar si es interactuable
+                if (foregroundObject.CompareTag("Interactuable"))
+                {
+                    if (distance <= 5f)
+                    {
+                        ShowInForeground(foregroundObject);
+                    }
+                    else
+                    {
+                        MoveToClick();
+                    }
+                }
+
+                if (foregroundObject.CompareTag("Clon Interactuable"))
+                {
+                    ShowInForeground(foregroundObject);
+                }
             }
         }
+
         
 
         if (Input.GetMouseButton(1) && selectedObject != null) // While dragging
@@ -143,6 +146,12 @@ public class PosicionPuntero : MonoBehaviour
             
             ; // Deselect the object
         }
+        if (player == null)
+        {
+            Debug.LogError("Player no está asignado.");
+            return;
+        }
+
     }
 
     private void HandleInteractables(RaycastHit raycastHit)
