@@ -6,11 +6,25 @@ using TMPro; // Importar TextMeshPro
 public class CodeLock : MonoBehaviour
 {
     public GameObject panel; // Panel de ingreso de código
-    public TMP_InputField inputField; // Campo donde se ingresa el código (TMP)
+    public TMP_InputField[] inputFields = new TMP_InputField[4]; // 4 campos de texto
     public TMP_Text messageText; // Texto para mostrar mensajes (TMP)
-    public string correctCode = "123456"; // Código correcto
+    public Button submitButton; // Botón para enviar el código
+
+    private int[] correctNumbers = { 12, 34, 56, 78 }; // Números correctos para cada campo
 
     private bool isPlayerNear = false;
+
+    void Start()
+    {
+        // Desactivar el panel al inicio
+        panel.SetActive(false);
+
+        // Asignar el método CheckCode al botón
+        if (submitButton != null)
+        {
+            submitButton.onClick.AddListener(CheckCode);
+        }
+    }
 
     void Update()
     {
@@ -19,27 +33,41 @@ public class CodeLock : MonoBehaviour
             panel.SetActive(true);
             Cursor.lockState = CursorLockMode.None; // Libera el cursor
             Cursor.visible = true; // Hace visible el cursor
-            inputField.text = ""; // Limpia el input
-            StartCoroutine(ActivateInputField()); // Activa el InputField automáticamente
-        }
 
-        if (panel.activeSelf) // Pulsar Enter para activar el InputField
-        {
+            // Limpiar los campos de texto
+            foreach (var field in inputFields)
+            {
+                field.text = "";
+            }
+
+            StartCoroutine(ActivateInputField()); // Activa el primer InputField automáticamente
         }
     }
 
     IEnumerator ActivateInputField()
     {
         yield return new WaitForSeconds(0.1f); // Espera un pequeño tiempo
-        inputField.gameObject.SetActive(false); // Desactiva temporalmente el inputField
-        inputField.gameObject.SetActive(true);  // Lo vuelve a activar
-        inputField.Select(); // Selecciona el campo de texto
-        inputField.ActivateInputField(); // Lo activa para recibir entrada
+        if (inputFields.Length > 0)
+        {
+            inputFields[0].Select(); // Selecciona el primer campo de texto
+            inputFields[0].ActivateInputField(); // Lo activa para recibir entrada
+        }
     }
 
     public void CheckCode()
     {
-        if (inputField.text == correctCode)
+        bool isCorrect = true;
+
+        for (int i = 0; i < inputFields.Length; i++)
+        {
+            if (!int.TryParse(inputFields[i].text, out int enteredNumber) || enteredNumber != correctNumbers[i])
+            {
+                isCorrect = false;
+                break;
+            }
+        }
+
+        if (isCorrect)
         {
             messageText.text = "¡Código correcto!";
             panel.SetActive(false); // Oculta el panel
